@@ -320,6 +320,12 @@ if(isset($_POST['analyze']))
     $config.= 'sex=' . $_POST['sex'] . "\n";
     $config.= 'rmbadbins=' . $_POST['rmbadbins'] . "\n";
     $config.= 'rmpseudoautosomal=' . $_POST['rmpseudoautosomal'] . "\n";
+
+    // Sanitize numerical input
+    $mp = filter_var($_POST['maxPloidy'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+    $bw = filter_var($_POST['minBinWidth'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+    $config.= 'maxploidy=' . $mp . "\n";
+    $config.= 'minbinwidth=' . $bw . "\n";
     //
     file_put_contents($userDir . '/config', $config);
 
@@ -891,6 +897,20 @@ if($GINKGO_PAGE == 'admin-search')
                                 </td>
                             </tr>
 
+                            <tr id="max-ploidy-input"> <!-- style="display:none" -->
+                                <td>Max Ploidy <br/><i><small>Maximum allowable ploidy</small></i></td>
+                                <td>
+                                    <input type="text" id="max-ploidy" value="6" required>
+                                </td>
+                            </tr>
+
+                            <tr id="bin-width-input"> <!-- style="display:none" -->
+                                <td>Min Bin Width <br/><i><small>Minimum allowable width for bins</small></i></td>
+                                <td>
+                                    <input type="text" id="min-bin-width" value="5" required>
+                                </td>
+                            </tr>
+
                             <tr class="active"><td colspan="2"><strong>Clustering Parameters</strong></td></tr>
                             <tr>
                                 <td>Clustering</td>
@@ -961,7 +981,7 @@ if($GINKGO_PAGE == 'admin-search')
                     <?php
                         $btnCaption = 'Start Analysis';
                         if(file_exists($configFile))
-                            $btnCaption = 'View Results';
+                            $btnCaption = ' requiredView Results';
                     ?>
                     <hr><br/>
                     <div style="float:left"><a class="btn btn-lg btn-primary" href="?q=/<?php echo $GINKGO_USER_ID; ?>"><span class="glyphicon glyphicon-chevron-left"></span> Manage Files </a></div>
@@ -1408,6 +1428,16 @@ if($GINKGO_PAGE == 'admin-search')
         // -- Launch analysis ------------------------------------------------------
         // -------------------------------------------------------------------------
         $('#analyze').click(function() {
+            // Validate
+            if (isNaN($('#max-ploidy').val())) {
+                alert("Max Ploidy must be a positive number")
+                return false;
+            }
+            if (isNaN($('#min-bin-width').val())) {
+                alert("Min Bin Width must be a positive number")
+                return false;
+            }
+
             // -- Get list of cells of interest
             arrCells = [];
             $("#params-cells :checked").each(function() { arrCells.push($(this).val()); });
@@ -1458,6 +1488,8 @@ if($GINKGO_PAGE == 'admin-search')
                         rmbadbins = $('#dashboard-rmbadbins').is(':checked') == true ? 1 : 0;
                         rmpseudoautosomal = $('#dashboard-rmpseudoautosomal').is(':checked') == true ? 1 : 0;
 
+                        // Check that maxPloidy and minBinWidth input is numerical
+
                         //
                         $.post("?q=dashboard/" + ginkgo_user_id, {
                                 // General
@@ -1469,6 +1501,8 @@ if($GINKGO_PAGE == 'admin-search')
                                 'segMeth':  $('#param-segmentation').val(),
                                 'clustMeth':$('#param-clustering').val(),
                                 'distMeth': $('#param-distance').val(),
+                                'maxPloidy': $('#max-ploidy').val(),
+                                'minBinWidth': $('#min-bin-width').val(),
                                 // FACS file
                                 'f':                f,
                                 'facs':         facs,
