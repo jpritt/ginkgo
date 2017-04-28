@@ -40,8 +40,8 @@ class UploadHandler
         $this->options = array(
     		'ginkgo_zip' => false,
             'script_url' => $this->get_full_url().'/',
-            'upload_dir' => '/local1/work/ginkgo/uploads/' . $_SESSION["user_id"] . '/',
-            'upload_url' => 'http://qb.cshl.edu/ginkgo/uploads/' . $_SESSION["user_id"] . '/',
+            'upload_dir' => '/local1/work/ginkgodev/uploads/' . $_SESSION["user_id"] . '/',
+            'upload_url' => 'http://qb.cshl.edu/ginkgodev/uploads/' . $_SESSION["user_id"] . '/',
             'user_dirs' => false,
             'mkdir_mode' => 0755,
             'param_name' => 'files',

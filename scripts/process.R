@@ -11,7 +11,7 @@
 # Config
 maxPloidy   = 6
 minBinWidth = 5
-main_dir="/local1/work/ginkgo/scripts"
+main_dir="/local1/work/ginkgodev/scripts"
 
 # User settings
 args        = commandArgs(TRUE)
