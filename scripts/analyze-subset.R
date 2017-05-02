@@ -228,6 +228,150 @@ if(analysisType == "cnvprofiles")
 
 
 # ------------------------------------------------------------------------------
+# -- Compare CNV profiles
+# ------------------------------------------------------------------------------
+if(analysisType == "cnvcompare")
+{
+	library(scales)   # for alpha() opacity used in points() function
+        library(ggplot2)
+        library(gridExtra)
+
+        pos          = cbind(c(1,bounds[,2]), c(bounds[,2], l))
+
+	nbCells = length(cellIDs)
+
+	inputNames = read.table( paste(analysisID, '.config', sep=''), header=TRUE, stringsAsFactors=FALSE)
+	print(inputNames)
+	names = c()
+	ident = c()
+	ident_amp = c()
+	dists_e = c()
+	dists_m = c()
+	spearman = c()
+	pearson = c()
+
+	#
+	rowID = 1
+        numBins = length(final[,1])
+	print(cellIDs)
+        for(k in cellIDs[2:length(cellIDs)])
+	{
+                print(k)
+                rowID = rowID + 1
+                print(rowID)
+		orig_name = inputNames[rowID,1]
+		print(orig_name)
+		startPos = unlist(gregexpr('resampled_', orig_name, fixed=TRUE))[1]
+		name = substr(orig_name, startPos+10, nchar(orig_name))
+		endPos = unlist(gregexpr('.', name, fixed=TRUE))[1]
+                names[rowID-1] = substr(name, 1, endPos-1)
+                #names[rowID-1] = inputNames[rowID,1]
+
+		num_match = 0
+		num_match_amp = 0
+		dist_euclidean = 0
+		dist_manhattan = 0
+		for (i in 1:numBins) {
+			v1 = final[i,cellIDs[1]]
+			v2 = final[i,k]
+			if (v1 == v2)
+				num_match = num_match + 1
+
+			if ((v1 > 2 && v1 > 2) || (v1 < 2 && v2 < 2) || (v1 == 2 && v2 == 2))
+				num_match_amp = num_match_amp + 1
+
+			dist_euclidean = dist_euclidean + (v1 - v2)*(v1 - v2)
+			dist_manhattan = dist_manhattan + abs(v1 - v2)
+		}
+
+		ident[rowID-1] = 100 * num_match / numBins
+		ident_amp[rowID-1] = 100 * num_match_amp / numBins
+		dists_e[rowID-1] = sqrt(dist_euclidean)
+		dists_m[rowID-1] = dist_manhattan
+		spearman[rowID-1] = cor(final[,1], final[,k], method="spearman")
+		pearson[rowID-1] = cor(final[,1], final[,k], method="pearson")
+
+		jpeg(filename=paste("scatter_", names[rowID-1], ".jpeg", sep=""))
+		plot(final[,cellIDs[1]], final[,k], type="p", xlab="CN (100%)", ylab=paste("CN (", names[rowID-1], "%)", sep=""), cex.main=1.5, cex.axis=1.5, cex.lab=1.5, col=alpha(rgb(0,0,1), 0.5), pch=19)
+		dev.off()
+
+                #Plot CN profiles
+                jpeg(filename=paste(inputNames[1,1], "_comp_", orig_name, ".jpeg", sep=""), width=3000, height=750)
+
+                top=8
+                rectangles1=data.frame(pos[seq(1,nrow(pos), 2),])
+                rectangles2=data.frame(pos[seq(2,nrow(pos), 2),])
+                cn1 = data.frame(x=1:length(final[,1]), y=final[,1])
+                cn2 = data.frame(x=1:length(final[,k]), y=final[,k])
+                #amp=data.frame(x=which(final[,k]>2), y=final[which(final[,k]>2),k])
+                #del=data.frame(x=which(final[,k]<2), y=final[which(final[,k]<2),k])
+                #flat=data.frame(x=which(final[,k]==2), y=final[which(final[,k]==2),k])
+                anno=data.frame(x=(pos[,2]+pos[,1])/2, y=-top*.05, chrom=substring(c(as.character(bounds[,1]), "chrY"), 4 ,5))
+
+                plot1 = ggplot() +
+                  geom_rect(data=rectangles1, aes(xmin=X1, xmax=X2, ymin=-top*.1, ymax=top), fill='gray85', alpha=0.75) +
+                  geom_rect(data=rectangles2, aes(xmin=X1, xmax=X2, ymin=-top*.1, ymax=top), fill='gray75', alpha=0.75) +
+                  #geom_point(data=flat, aes(x=x, y=y), size=4) +
+                  #geom_point(data=amp, aes(x=x, y=y), size=4, color=colors[cp,1]) +
+                  #geom_point(data=del, aes(x=x, y=y), size=4, color=colors[cp,2]) +
+                  geom_point(data=cn1, aes(x=x, y=y), size=4, color='black') +
+                  geom_point(data=cn2, aes(x=x, y=y), size=4, color='blue4') +
+                  geom_text(data=anno, aes(x=x, y=y, label=chrom), size=12) +
+                  scale_x_continuous(limits=c(0, l), expand = c(0, 0)) +
+                  scale_y_continuous(limits=c(-top*.1, top), expand = c(0, 0)) +
+                  labs(title=paste("Integer Copy Number Profiles for Sample \"", inputNames[1,1], "\" (black), and sample \"", orig_name, "\" (blue)", sep=""), x="Chromosome", y="Copy Number", size=16) +
+                  theme(plot.title=element_text(size=40, vjust=1.5)) +
+                  theme(axis.title.x=element_text(size=40, vjust=-.05), axis.title.y=element_text(size=40, vjust=.1)) +
+                  theme(axis.text=element_text(color="black", size=40), axis.ticks=element_line(color="black"))+
+                  theme(axis.ticks.x = element_blank(), axis.text.x = element_blank(), axis.line.x = element_blank()) +
+                  theme(panel.background = element_rect(fill = 'gray90')) +
+                  theme(plot.margin=unit(c(.5,1,.5,1),"cm")) +
+                  theme(panel.grid.major.x = element_blank()) +
+                  geom_vline(xintercept = c(1, l), size=.5) +
+                  geom_hline(yintercept = c(-top*.1, top), size=.5)
+
+                  grid.arrange(plot1, ncol=1)
+                dev.off()
+
+
+                print('')
+	}
+
+	jpeg(filename=paste("identical_bins.jpeg", sep=""))
+	#plot(pcts, ident, main="Percentage of Identical Bins", type="p", ylim=c(0,100), xlab="% Reads", ylab="% Identical Bins", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
+	barplot(ident, names.arg=names, xlab='% Reads', ylab='% Identical Bins')
+	dev.off()
+
+	jpeg(filename=paste("identical_amp_bins.jpeg", sep=""))
+	#plot(pcts, ident_amp, main="% Bins with Matching Amp / Del", type="b", xlab="% Reads", ylab="% Identical Bins", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
+	barplot(ident_amp, names.arg=names, xlab='% Reads', ylab='% Same Amp/Del')
+	dev.off()
+
+	jpeg(filename=paste("euclidean_dist.jpeg", sep=""))
+	#plot(pcts, dists_e, main="Euclidean Distance between CNVs", type="b", xlab="% Reads", ylab="Euclidean Distance", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
+	barplot(dists_e, names.arg=names, xlab='% Reads', ylab='Euclidean Distance')
+	dev.off()
+
+	jpeg(filename=paste("manhattan_dist.jpeg", sep=""))
+	#plot(pcts, dists_m, main="Manhattan Distance between CNVs", type="b", xlab="% Reads", ylab="Manhattan Distance", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
+	barplot(dists_m, names.arg=names, xlab='% Reads', ylab='Manhattan Distance')
+	dev.off()
+
+	jpeg(filename=paste("spearman.jpeg", sep=""))
+	#plot(pcts, spearman, main="Spearman Correlation between CNVs", type="b", ylim=c(0,1), xlab="% Reads", ylab="Spearman Correlation", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
+	barplot(spearman, names.arg=names, xlab='% Reads', ylab='Spearman Correlation')
+	dev.off()
+
+	jpeg(filename=paste("pearson.jpeg", sep=""))
+	#plot(pcts, pearson, main="Pearson Correlation between CNVs", type="b", ylim=c(0,1), xlab="% Reads", ylab="Pearson Correlation", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
+	barplot(pearson, names.arg=names, xlab='% Reads', ylab='Pearson Correlation')
+	dev.off()
+
+	file.create(paste(analysisID,'.done', sep=""))
+}
+
+
+# ------------------------------------------------------------------------------
 # -- Plot MAD curves
 # ------------------------------------------------------------------------------
 if(analysisType == "mad")

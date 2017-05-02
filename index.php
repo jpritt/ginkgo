@@ -386,6 +386,20 @@ if($GINKGO_PAGE == "results-subset")
     exit;
 }
 
+if ($GINKGO_PAGE == "results-compare")
+{
+    if(file_exists('uploads/' . $GINKGO_USER_ID . '/' . $query[2] . '.done'))
+        echo 'Done';
+    else
+        echo 'Generating figure...<meta http-equiv="refresh" content="1">';
+    exit;
+    #echo '<img src="./uploads/' . $GINKGO_USER_ID . '/identical_bins.jpeg?uniq=' . rand(1e6,2e6) . '">';
+    #echo '<img src="./uploads/' . $GINKGO_USER_ID . '/identical_amp_bins.jpeg?uniq=' . rand(1e6,2e6) . '">';
+    #echo '<img src="./uploads/' . $GINKGO_USER_ID . '/euclidean_dist.jpeg?uniq=' . rand(1e6,2e6) . '">';
+    #echo '<img src="./uploads/' . $GINKGO_USER_ID . '/manhattan_dist.jpeg?uniq=' . rand(1e6,2e6) . '">';
+    #echo '<img src="./uploads/' . $GINKGO_USER_ID . '/pearson.jpeg?uniq=' . rand(1e6,2e6) . '">';
+    #echo '<img src="./uploads/' . $GINKGO_USER_ID . '/spearman.jpeg?uniq=' . rand(1e6,2e6) . '">';
+}
 
 // =============================================================================
 // == Prepare file for UCSC custom track =======================================
@@ -981,7 +995,7 @@ if($GINKGO_PAGE == 'admin-search')
                     <?php
                         $btnCaption = 'Start Analysis';
                         if(file_exists($configFile))
-                            $btnCaption = ' requiredView Results';
+                            $btnCaption = 'View Results';
                     ?>
                     <hr><br/>
                     <div style="float:left"><a class="btn btn-lg btn-primary" href="?q=/<?php echo $GINKGO_USER_ID; ?>"><span class="glyphicon glyphicon-chevron-left"></span> Manage Files </a></div>
@@ -1024,6 +1038,7 @@ if($GINKGO_PAGE == 'admin-search')
                                 <td style="width:75%; vertical-align:middle">
                                     With selected cells, plot:
                                     <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('cnvprofiles')"><span>CNV profiles</span></a>
+                                    <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('cnvcompare')"><span>Compare CNV</span></a>
                                     <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('lorenz')"><span>Lorenz curve</span></a>
                                     <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('gc')"><span>GC bias</span></a>
                                     <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('mad')"><span>MAD</span></a>
@@ -1555,7 +1570,10 @@ if($GINKGO_PAGE == 'admin-search')
                 function(data)
                 {
                     if(data != '-1')
-                        window.open('?q=results-subset/<?php echo $GINKGO_USER_ID; ?>/' + data, '_blank')
+                        if (analysisType == 'cnvcompare')
+                            window.open('?q=results-compare/<?php echo $GINKGO_USER_ID; ?>/' + data, '_blank')
+                        else
+                            window.open('?q=results-subset/<?php echo $GINKGO_USER_ID; ?>/' + data, '_blank')
                 }
             );
         }
