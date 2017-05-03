@@ -238,10 +238,7 @@ if(analysisType == "cnvcompare")
 
         pos          = cbind(c(1,bounds[,2]), c(bounds[,2], l))
 
-	nbCells = length(cellIDs)
-
 	inputNames = read.table( paste(analysisID, '.config', sep=''), header=TRUE, stringsAsFactors=FALSE)
-	print(inputNames)
 	names = c()
 	ident = c()
 	ident_amp = c()
@@ -252,17 +249,13 @@ if(analysisType == "cnvcompare")
 
 	#
 	rowID = 1
-        numBins = length(final[,1])
-	print(cellIDs)
-        for(k in cellIDs[2:length(cellIDs)])
+        ref = inputNames[1,1]
+        numBins = length(final[,ref])
+        for(n in inputNames[2:length(inputNames[,1]),1])
 	{
-                print(k)
                 rowID = rowID + 1
-                print(rowID)
-		orig_name = inputNames[rowID,1]
-		print(orig_name)
-		startPos = unlist(gregexpr('resampled_', orig_name, fixed=TRUE))[1]
-		name = substr(orig_name, startPos+10, nchar(orig_name))
+		startPos = unlist(gregexpr('resampled_', n, fixed=TRUE))[1]
+		name = substr(n, startPos+10, nchar(n))
 		endPos = unlist(gregexpr('.', name, fixed=TRUE))[1]
                 names[rowID-1] = substr(name, 1, endPos-1)
                 #names[rowID-1] = inputNames[rowID,1]
@@ -272,8 +265,8 @@ if(analysisType == "cnvcompare")
 		dist_euclidean = 0
 		dist_manhattan = 0
 		for (i in 1:numBins) {
-			v1 = final[i,cellIDs[1]]
-			v2 = final[i,k]
+			v1 = final[i,ref]
+			v2 = final[i,n]
 			if (v1 == v2)
 				num_match = num_match + 1
 
@@ -288,21 +281,22 @@ if(analysisType == "cnvcompare")
 		ident_amp[rowID-1] = 100 * num_match_amp / numBins
 		dists_e[rowID-1] = sqrt(dist_euclidean)
 		dists_m[rowID-1] = dist_manhattan
-		spearman[rowID-1] = cor(final[,1], final[,k], method="spearman")
-		pearson[rowID-1] = cor(final[,1], final[,k], method="pearson")
+		spearman[rowID-1] = cor(final[,ref], final[,n], method="spearman")
+		pearson[rowID-1] = cor(final[,ref], final[,n], method="pearson")
 
-		jpeg(filename=paste("scatter_", names[rowID-1], ".jpeg", sep=""))
-		plot(final[,cellIDs[1]], final[,k], type="p", xlab="CN (100%)", ylab=paste("CN (", names[rowID-1], "%)", sep=""), cex.main=1.5, cex.axis=1.5, cex.lab=1.5, col=alpha(rgb(0,0,1), 0.5), pch=19)
+		jpeg(filename=paste(n, "_scatter.jpeg", sep=""))
+		plot(final[,ref], final[,n], type="p", xlab="CN (100%)", ylab=paste("CN (", names[rowID-1], "%)", sep=""), cex.main=1.5, cex.axis=1.5, cex.lab=1.5, col=alpha(rgb(0,0,1), 0.5), pch=19)
 		dev.off()
 
                 #Plot CN profiles
-                jpeg(filename=paste(inputNames[1,1], "_comp_", orig_name, ".jpeg", sep=""), width=3000, height=750)
+                jpeg(filename=paste(ref, "_comp_", n, ".jpeg", sep=""), width=3000, height=750)
 
                 top=8
                 rectangles1=data.frame(pos[seq(1,nrow(pos), 2),])
                 rectangles2=data.frame(pos[seq(2,nrow(pos), 2),])
-                cn1 = data.frame(x=1:length(final[,1]), y=final[,1])
-                cn2 = data.frame(x=1:length(final[,k]), y=final[,k])
+                cn1 = data.frame(x=which(final[,ref] != final[,n]), y=final[which(final[,ref] != final[,n]), ref])
+                cn2 = data.frame(x=which(final[,ref] != final[,n]), y=final[which(final[,ref] != final[,n]), n])
+                cnsame = data.frame(x=which(final[,ref] == final[,n]), y=final[which(final[,ref] == final[,n]), ref])
                 #amp=data.frame(x=which(final[,k]>2), y=final[which(final[,k]>2),k])
                 #del=data.frame(x=which(final[,k]<2), y=final[which(final[,k]<2),k])
                 #flat=data.frame(x=which(final[,k]==2), y=final[which(final[,k]==2),k])
@@ -314,12 +308,13 @@ if(analysisType == "cnvcompare")
                   #geom_point(data=flat, aes(x=x, y=y), size=4) +
                   #geom_point(data=amp, aes(x=x, y=y), size=4, color=colors[cp,1]) +
                   #geom_point(data=del, aes(x=x, y=y), size=4, color=colors[cp,2]) +
-                  geom_point(data=cn1, aes(x=x, y=y), size=4, color='black') +
-                  geom_point(data=cn2, aes(x=x, y=y), size=4, color='blue4') +
+                  geom_point(data=cn1, aes(x=x, y=y), stroke=0, size=5, fill='red', color='red') +
+                  geom_point(data=cn2, aes(x=x, y=y), stroke=0, size=5, fill='blue', color='blue') +
+                  geom_point(data=cnsame, aes(x=x, y=y), stroke=0, size=5, fill='purple', color='purple') +
                   geom_text(data=anno, aes(x=x, y=y, label=chrom), size=12) +
                   scale_x_continuous(limits=c(0, l), expand = c(0, 0)) +
                   scale_y_continuous(limits=c(-top*.1, top), expand = c(0, 0)) +
-                  labs(title=paste("Integer Copy Number Profiles for Sample \"", inputNames[1,1], "\" (black), and sample \"", orig_name, "\" (blue)", sep=""), x="Chromosome", y="Copy Number", size=16) +
+                  labs(title=paste("Integer Copy Number Profiles for Sample \"", ref, "\" (red), and sample \"", n, "\" (blue)", sep=""), x="Chromosome", y="Copy Number", size=16) +
                   theme(plot.title=element_text(size=40, vjust=1.5)) +
                   theme(axis.title.x=element_text(size=40, vjust=-.05), axis.title.y=element_text(size=40, vjust=.1)) +
                   theme(axis.text=element_text(color="black", size=40), axis.ticks=element_line(color="black"))+
@@ -332,7 +327,6 @@ if(analysisType == "cnvcompare")
 
                   grid.arrange(plot1, ncol=1)
                 dev.off()
-
 
                 print('')
 	}
@@ -367,7 +361,8 @@ if(analysisType == "cnvcompare")
 	barplot(pearson, names.arg=names, xlab='% Reads', ylab='Pearson Correlation')
 	dev.off()
 
-	file.create(paste(analysisID,'.done', sep=""))
+	#file.create(paste(analysisID,'.done', sep=""))
+        cat(paste(inputNames[,1], collapse='\n'), file=paste(analysisID,'.done', sep=""))
 }
 
 
