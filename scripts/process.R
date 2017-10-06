@@ -194,6 +194,7 @@ for(k in 1:w)
   for(i in 2:(len-1))
     fixed[,k][bps[i]:(bps[i+1]-1)] = median(normal[,k][bps[i]:(bps[i+1]-1)])
   fixed[,k] = fixed[,k]/mean(fixed[,k])
+  normal[,k] = normal[,k]/mean(fixed[,k])
 
   # ----------------------------------------------------------------------------
   # -- Determine Copy Number (SoS Method)
