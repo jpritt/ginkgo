@@ -5,11 +5,11 @@
 // =============================================================================
 
 // Directories
-define('DIR_ROOT', '/local1/work/ginkgo');
+define('DIR_ROOT', '/local1/work/ginkgodev');
 define('DIR_UPLOADS', DIR_ROOT . '/uploads');
 
 // URLs
-define('URL_ROOT', 'http://qb.cshl.edu/ginkgo');
+define('URL_ROOT', 'http://qb.cshl.edu/ginkgodev');
 define('URL_UPLOADS', URL_ROOT . '/uploads');
 
 // Minimum number of cells to perform an analysis

@@ -9,9 +9,9 @@
 # ------------------------------------------------------------------------------
 
 # Config
-maxPloidy   = 6
-minBinWidth = 5
-main_dir="/local1/work/ginkgo/scripts"
+#maxPloidy   = 6
+#minBinWidth = 5
+main_dir="/local1/work/ginkgodev/scripts"
 
 # User settings
 args        = commandArgs(TRUE)
@@ -29,6 +29,8 @@ f           = as.numeric(args[[11]])
 facs        = args[[12]]
 sex         = as.numeric(args[[13]])
 bb          = as.numeric(args[[14]])
+maxPloidy   = as.numeric(args[[15]])
+minBinWidth = as.numeric(args[[16]])
 
 # Libraries
 library('ctc')

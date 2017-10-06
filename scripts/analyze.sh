@@ -8,7 +8,7 @@
 # -- Variables
 # ------------------------------------------------------------------------------
 
-home=/local1/work/ginkgo
+home=/local1/work/ginkgodev
 dir=${home}/uploads/${1}
 source ${dir}/config
 distMet=$distMeth
@@ -108,8 +108,8 @@ fi
 # ------------------------------------------------------------------------------
 
 if [ "$process" == "1" ]; then
-  echo "Launching process.R $genome $dir $statFile data $segMeth $binMeth $clustMeth $distMet $color ${ref}_mapped $f $facs $sex $rmbadbins"
-  ${home}/scripts/process.R $genome $dir $statFile data $segMeth $binMeth $clustMeth $distMet $color ${ref}_mapped $f $facs $sex $rmbadbins
+  echo "Launching process.R $genome $dir $statFile data $segMeth $binMeth $clustMeth $distMet $color ${ref}_mapped $f $facs $sex $rmbadbins $maxploidy $minbinwidth"
+  ${home}/scripts/process.R $genome $dir $statFile data $segMeth $binMeth $clustMeth $distMet $color ${ref}_mapped $f $facs $sex $rmbadbins $maxploidy $minbinwidth
 fi
 
 # ------------------------------------------------------------------------------

@@ -60,7 +60,26 @@ if($GINKGO_PAGE == "dashboard")
 if($GINKGO_PAGE == "results")
   $CURR_CELL = $query[2];
 
+if ($GINKGO_PAGE == "results-compare") {
+  $CURR_CELL = $query[2];
 
+  $filename = DIR_UPLOADS . '/' . $GINKGO_USER_ID . '/' . $query[2] . ".config";
+  $file = fopen($filename, "r") or die("Unable to open config file " . $filename);
+  $file_contents = fread($file, filesize($filename));
+  $lines = split("\n", $file_contents);
+  $lineNum = 0;
+  $REF_NAME = '';
+  $COMP_NAMES = array();
+  foreach ($lines as $line) {
+    $lineNum++;
+    if ($lineNum == 1)
+      continue;
+    elseif ($lineNum == 2)
+      $REF_NAME = $line;
+    else
+        array_push($COMP_NAMES, $line);
+  }
+}
 // =============================================================================
 // == Session management =======================================================
 // =============================================================================
@@ -81,7 +100,7 @@ if(file_exists($descFile = $userDir . '/description.txt'))
 // =============================================================================
 
 // -- Panel for info -----------------------------------------------------------
-if($GINKGO_PAGE == "results" || $GINKGO_PAGE == "analyze-subset")
+if($GINKGO_PAGE == "results" || $GINKGO_PAGE == "results-compare" || $GINKGO_PAGE == "analyze-subset")
 {
     $configFile = $userDir . "/config";
     if(file_exists($configFile)) {
@@ -93,7 +112,7 @@ if($GINKGO_PAGE == "results" || $GINKGO_PAGE == "analyze-subset")
         }
     }   
 }
-$tmpBinMeth = split('_', $config['binMeth']);
+$tmpBinMeth = explode('_', $config['binMeth']);
 $binInfo    = $tmpBinMeth[0] . ' bins of ' . $tmpBinMeth[1]/1000 . 'kb size <small><small>(' . $tmpBinMeth[3] . '/' . $tmpBinMeth[2] . 'bp reads)</small></small>';
 $clusteringInfo = $config['clustMeth'] . ' linkage, ' . str_replace('euclidian','euclidean',$config['distMeth']) . ' distance';
 $segInfo    = 'normalized read counts';
@@ -102,6 +121,9 @@ if($config['segMeth'] == '1')
 if($config['segMeth'] == '2')
     $segInfo = 'uploaded reference sample';
 $genome = $config['chosen_genome'];
+$maxPloidy = $config['maxPloidy'];
+$minBinWidth = $config['minBinWidth'];
+
 
 $PANEL_INFO = <<<PANEL
     <!-- Panel: Summary of parameters used -->
@@ -320,6 +342,8 @@ if(isset($_POST['analyze']))
     $config.= 'sex=' . $_POST['sex'] . "\n";
     $config.= 'rmbadbins=' . $_POST['rmbadbins'] . "\n";
     $config.= 'rmpseudoautosomal=' . $_POST['rmpseudoautosomal'] . "\n";
+    $config.= 'maxploidy=' . $_POST['maxPloidy'] . "\n";
+    $config.= 'minbinwidth=' . $_POST['minBinWidth'] . "\n";
     //
     file_put_contents($userDir . '/config', $config);
 
@@ -379,6 +403,21 @@ if($GINKGO_PAGE == "results-subset")
         echo 'Generating figure...<meta http-equiv="refresh" content="1">';
     exit;
 }
+
+//if($GINKGO_PAGE == "results-compare")
+//{
+//    echo '<img src="./uploads/' . $GINKGO_USER_ID . '/identical_bins.jpeg?uniq=' . rand(1e6,2e6) . '">';
+//    echo '<img src="./uploads/' . $GINKGO_USER_ID . '/identical_amp_bins.jpeg?uniq=' . rand(1e6,2e6) . '">';
+//    echo '<img src="./uploads/' . $GINKGO_USER_ID . '/euclidean_dist.jpeg?uniq=' . rand(1e6,2e6) . '">';
+//    echo '<img src="./uploads/' . $GINKGO_USER_ID . '/manhattan_dist.jpeg?uniq=' . rand(1e6,2e6) . '">';
+//    echo '<img src="./uploads/' . $GINKGO_USER_ID . '/pearson.jpeg?uniq=' . rand(1e6,2e6) . '">';
+//    echo '<img src="./uploads/' . $GINKGO_USER_ID . '/spearman.jpeg?uniq=' . rand(1e6,2e6) . '">';
+
+//    foreach($selectedCells as $cell)
+//        echo '<img src="./uploads/' . $GINKGO_USER_ID . '/scatter_' . $cell . '.jpeg?uniq=' . rand(1e6,2e6) . '">';
+
+//    exit;
+//}
 
 
 // =============================================================================
@@ -499,6 +538,8 @@ if($GINKGO_PAGE == 'admin-search')
             #results-QA-table tr td:first-child:before { content: "\f096"; font-family: FontAwesome; }
             #results-QA-table tr.selected td:first-child:before { content: "\f046"; }
             /* */
+            #results-CNV-table tr td:first-child { text-align: center; }
+            /* */
             .codesample { background-color:#f9f2f4; font-family:Monaco, monospace, serif; font-size:90%; color:#C7254E; padding:10px; }
             /* */
             .graph-annotations { font-size: 11px !important; color: #fff !important; background-color: #c73030; }
@@ -608,6 +649,12 @@ if($GINKGO_PAGE == 'admin-search')
                         <span id="results-status-text">Updating status...</span><br />
                         <div class="progress progress-striped active"><div id="results-progress" class="progress-bar" role="progressbar" style="width: 0%"></div></div>
                     </div>
+
+                    <?php elseif($GINKGO_PAGE == 'results-compare'): ?>
+                    <div class="status-box" id="results-status">
+                        <span id="results-status-text">Updating status...</span><br />
+                    </div>
+
                     <?php endif; ?>
                 </div>
             </div>
@@ -797,7 +844,7 @@ if($GINKGO_PAGE == 'admin-search')
                                 <?php
                                     if(empty($config))
                                         $config['binMeth'] = 'variable_500000_101_bowtie';
-                                    $binMeth = split('_', $config['binMeth']);
+                                    $binMeth = explode('_', $config['binMeth']);
                                 ?>
                                 <td>
                                     <?php $selected = array(); $selected[$binMeth[0]] = ' selected'; ?>
@@ -891,6 +938,20 @@ if($GINKGO_PAGE == 'admin-search')
                                 </td>
                             </tr>
 
+                            <tr id="max-ploidy-input"> <!-- style="display:none" -->
+                                <td>Max Ploidy <br/><i><small>Maximum allowable ploidy</small></i></td>
+                                <td>
+                                    <input type="text" id="max-ploidy" value="6">
+                                </td>
+                            </tr>
+
+                            <tr id="bin-width-input"> <!-- style="display:none" -->
+                                <td>Min Bin Width <br/><i><small>Minimum allowable width for bins</small></i></td>
+                                <td>
+                                    <input type="text" id="min-bin-width" value="5">
+                                </td>
+                            </tr>
+
                             <tr class="active"><td colspan="2"><strong>Clustering Parameters</strong></td></tr>
                             <tr>
                                 <td>Clustering</td>
@@ -974,6 +1035,38 @@ if($GINKGO_PAGE == 'admin-search')
                 </div>
             </div>
 
+            <?php // ================================================================ ?>
+            <?php // == Dashboard: CNV Comparison Results =========================== ?>
+            <?php // ================================================================ ?>
+            <?php elseif($GINKGO_PAGE == 'results-compare'): ?>
+            <!-- Results -->
+            
+            <div class="row">
+                <div id="results" class="col-lg-8">
+                    <!-- Panel: Summary -->
+                    <div id="results-summary" class="panel panel-default">
+                        <div class="panel-heading"><span class="glyphicon glyphicon-certificate"></span> Summary</div>
+                        <div style="height:350px; overflow:auto;">
+                            <table class="table" id="results-CNV-table"></table>
+                        </div>
+                    </div>
+
+                    <!-- Panel: More results -->
+                    <div id="results-heatmaps" class="panel panel-default">
+                        <div class="panel-heading"><span class="glyphicon glyphicon-barcode"></span> More Results</div>
+                        <div class="panel-body">
+                        <table class="table" id="results-CNV-list" style="text-align:center"></table>
+                        </table>
+                        </div>
+                    </div>
+                    <!-- Buttons: back or next -->
+                    <div id="results-navigation">
+                        <br/>
+                        <hr>
+                        <div style="float:left"><a class="btn btn-lg btn-primary" href="?q=results/<?php echo $GINKGO_USER_ID; ?>"><span class="glyphicon glyphicon-chevron-left"></span> Results </a></div>
+                    </div>
+                </div>
+            </div>
 
             <?php // ================================================================ ?>
             <?php // == Dashboard: Results/Main ===================================== ?>
@@ -1004,6 +1097,7 @@ if($GINKGO_PAGE == 'admin-search')
                                 <td style="width:75%; vertical-align:middle">
                                     With selected cells, plot:
                                     <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('cnvprofiles')"><span>CNV profiles</span></a>
+                                    <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('cnvcompare')"><span>CNV Compare</span></a>
                                     <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('lorenz')"><span>Lorenz curve</span></a>
                                     <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('gc')"><span>GC bias</span></a>
                                     <a aria-controls="results-QA-table" class="DTTT_button DTTT_button_text" onclick="javascript:analyze_subset('mad')"><span>MAD</span></a>
@@ -1343,7 +1437,17 @@ if($GINKGO_PAGE == 'admin-search')
         <?php if($GINKGO_PAGE == 'home' && $query[1] == ""): ?>
         window.history.pushState("", "", "?q=/" + ginkgo_user_id);
         <?php endif; ?>
+
+        <?php if ($GINKGO_PAGE == 'results-compare'): ?>
+            var ginkgo_exp_id = "<?php echo $CURR_CELL; ?>";
+        <?php endif; ?>
+
         var g = null;
+
+        <?php if($GINKGO_PAGE == 'results-compare'): ?>
+        var results_loaded = false;
+        var cells = [];
+        <?php endif; ?>
 
         // -------------------------------------------------------------------------
         // -- On page load ---------------------------------------------------------
@@ -1366,6 +1470,16 @@ if($GINKGO_PAGE == 'admin-search')
                 
                 // Launch function to keep updating status
                 ginkgo_progress = setInterval( "getAnalysisStatus()", 1000 );
+
+            <?php elseif ($GINKGO_PAGE == 'results-compare'): ?>
+                Tinycon.setBubble(0);
+                
+                getCNVStatus();
+                $("#results-summary").hide();
+                $("#results-heatmaps").hide();
+
+                // Launch function to keep updating status
+                ginkgo_progress = setInterval( "getCNVStatus()", 1000 );
 
             <?php endif; ?>
         });
@@ -1469,6 +1583,8 @@ if($GINKGO_PAGE == 'admin-search')
                                 'segMeth':  $('#param-segmentation').val(),
                                 'clustMeth':$('#param-clustering').val(),
                                 'distMeth': $('#param-distance').val(),
+                                'maxPloidy': $('#max-ploidy').val(),
+                                'minBinWidth': $('#min-bin-width').val(),
                                 // FACS file
                                 'f':                f,
                                 'facs':         facs,
@@ -1520,12 +1636,137 @@ if($GINKGO_PAGE == 'admin-search')
                 },
                 function(data)
                 {
-                    if(data != '-1')
-                        window.open('?q=results-subset/<?php echo $GINKGO_USER_ID; ?>/' + data, '_blank')
+                    if(data != '-1') {
+                        if (analysisType == 'cnvcompare')
+                            window.location = '?q=results-compare/<?php echo $GINKGO_USER_ID; ?>/' + data;
+                            //window.open('?q=results-compare/<?php echo $GINKGO_USER_ID; ?>/' + data, '_blank')
+                        else
+                            window.open('?q=results-subset/<?php echo $GINKGO_USER_ID; ?>/' + data, '_blank')
+                    }
                 }
             );
         }
-        
+
+        function cnvCompare(target)
+        {
+            if (target == 0)
+                return;
+
+            orderedCells = [cells[target]];
+            orderedCells = orderedCells.concat(cells.slice(0, target));
+            orderedCells = orderedCells.concat(cells.slice(target+1));
+
+            // -- Submit subset analysis
+            $.post("?q=analyze-subset/" + ginkgo_user_id, {
+                    'analyze-subset'    : 1,
+                    'selectedCells'     : orderedCells,
+                    'analysisType'      : 'cnvcompare',
+                },
+                function(data)
+                {
+                    if(data != '-1')
+                        window.location = '?q=results-compare/<?php echo $GINKGO_USER_ID; ?>/' + data;
+                }
+            );
+        }
+
+        function getCNVStatus()
+        {
+            if (results_loaded)
+                return;
+
+            $("#results-status-text").html("Comparing CNV profiles...");
+
+            $.get("<?php echo URL_UPLOADS; ?>/" + ginkgo_user_id + "/" + ginkgo_exp_id + ".done", function(outputFile)
+            {
+                // This function will only run when output file is present (i.e. when analysis is complete)
+                results_loaded = true;
+
+                lineNb = 0;
+                table = '<thead> ' + '\n' +
+                        '   <tr style="background-color: white !important"> ' + '\n' +
+                        '       <th style="text-align:center; vertical-align:middle" width="25%">Cell</th> ' + '\n' +
+                        '       <th style="text-align:center; vertical-align:middle" width="25%">CNV Comparison</th> ' + '\n' +
+                        '       <th style="text-align:center; vertical-align:middle" width="25%">Scatter Plot</th> ' + '\n' +
+                        '   </tr> ' + '\n' +
+                        '   </thead>\n';
+                table += '<tbody>';
+                cells = outputFile.split('\n');
+
+                ref = cells[0];
+                ref_header = '<form id="reflist">Comparing all samples to <select id="chosenref">';
+                compPrefix = ref + '_comp_';
+                for(cell_id in cells)
+                {
+                    cell = cells[cell_id]
+                    ref_header += '<option value="' + cell_id + '">' + cell + '</option>';
+
+                    lineNb++;
+                    if(lineNb == 1) {
+                        continue;
+                    }
+
+                    //
+                    rndNb = Math.round(Math.random()*10000); // to prevent browser from caching xml file!
+                    cnvComp = "<?php echo URL_UPLOADS; ?>/" + ginkgo_user_id + '/' + compPrefix + cell + '.jpeg?uniq=' + rndNb;
+                    scatter = "<?php echo URL_UPLOADS; ?>/" + ginkgo_user_id + '/' + cell + '_scatter.jpeg?uniq=' + rndNb;
+                    cellUrl = "?q=results/" + ginkgo_user_id + "/" + cell;
+
+                    //
+                    table += '<tr>' + 
+                                 '<td width="25%" style="text-align:center"><a href="' + cellUrl + '">' + cell + '</a></td>' + 
+                                 '<td width="25%" style="text-align:center"><a href="' + cnvComp + '" alt=""><img height="35" src="' + cnvComp + '"></a></td>' + 
+                                 '<td width="25%" style="text-align:center"><a href="' + scatter + '" alt=""><img height="35" src="' + scatter + '"></a></td>' + 
+                             '</tr>';
+                }
+
+                ref_header += '</select><input type="button" class="DTTT_button DTTT_button_text" style="margin-left:20px" onclick=\'cnvCompare(parseInt($("#chosenref").val()))\' value="Submit"></form>';
+                $("#results-status-text").html(ref_header);
+
+                table += "</tbody>";
+
+                $("#results-CNV-table").show();
+                $("#results-CNV-table").html(table);
+
+                img_url = "<?php echo URL_UPLOADS; ?>/" + ginkgo_user_id + "/identical_bins.jpeg";
+                table2 = '<tr><td><strong>Percentage of bins with identical CN between sample and reference</strong><br/>' +
+                             '<a href="' + img_url + '"><img style="height:100;" src="' + img_url + '"></a>' +
+                         '</td></tr>';
+
+                img_url = "<?php echo URL_UPLOADS; ?>/" + ginkgo_user_id + "/identical_amp_bins.jpeg";
+                table2 += '<tr><td><strong>Percentage of bins with same amplification/deletion between sample and reference</strong><br/>' +
+                             '<a href="' + img_url + '"><img style="height:100;" src="' + img_url + '"></a>' +
+                         '</td></tr>';
+
+                img_url = "<?php echo URL_UPLOADS; ?>/" + ginkgo_user_id + "/euclidean_dist.jpeg";
+                table2 += '<tr><td><strong>Euclidean distance between vectors of bin CNs for sample and reference</strong><br/>' +
+                             '<a href="' + img_url + '"><img style="height:100;" src="' + img_url + '"></a>' +
+                         '</td></tr>';
+
+                img_url = "<?php echo URL_UPLOADS; ?>/" + ginkgo_user_id + "/manhattan_dist.jpeg";
+                table2 += '<tr><td><strong>Manhattan distance between vectors of bin CNs for sample and reference</strong><br/>' +
+                             '<a href="' + img_url + '"><img style="height:100;" src="' + img_url + '"></a>' +
+                         '</td></tr>';
+
+                img_url = "<?php echo URL_UPLOADS; ?>/" + ginkgo_user_id + "/pearson.jpeg";
+                table2 += '<tr><td><strong>Pearson correlation between vectors of bin CNs for sample and reference</strong><br/>' +
+                             '<a href="' + img_url + '"><img style="height:100;" src="' + img_url + '"></a>' +
+                         '</td></tr>';
+
+                img_url = "<?php echo URL_UPLOADS; ?>/" + ginkgo_user_id + "/spearman.jpeg";
+                table2 += '<tr><td><strong>Spearman correlation between vectors of bin CNs for sample and reference</strong><br/>' +
+                             '<a href="' + img_url + '"><img style="height:100;" src="' + img_url + '"></a>' +
+                         '</td></tr>';
+
+                $("#results-CNV-list").show();
+                $("#results-CNV-list").html(table2);
+
+                $("#results-summary").show();
+                $("#results-heatmaps").show();
+            });
+
+            $("#results-status-text").show();
+        }
 
         // -------------------------------------------------------------------------
         // -- Refresh progress -----------------------------------------------------
