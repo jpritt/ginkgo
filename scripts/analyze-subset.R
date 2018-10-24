@@ -257,8 +257,8 @@ if(analysisType == "cnvcompare")
 		startPos = unlist(gregexpr('resampled_', n, fixed=TRUE))[1]
 		name = substr(n, startPos+10, nchar(n))
 		endPos = unlist(gregexpr('.', name, fixed=TRUE))[1]
-                names[rowID-1] = substr(name, 1, endPos-1)
-                #names[rowID-1] = inputNames[rowID,1]
+                #names[rowID-1] = substr(name, 1, endPos-1)
+                names[rowID-1] = n
 
 		num_match = 0
 		num_match_amp = 0
@@ -333,32 +333,33 @@ if(analysisType == "cnvcompare")
 
 	jpeg(filename=paste("identical_bins.jpeg", sep=""))
 	#plot(pcts, ident, main="Percentage of Identical Bins", type="p", ylim=c(0,100), xlab="% Reads", ylab="% Identical Bins", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
-	barplot(ident, names.arg=names, xlab='% Reads', ylab='% Identical Bins')
+        op <- par(mar=c(10,4,4,2) + 0.1)
+	barplot(ident, names.arg=names, las=2, xlab='% Reads', ylab='% Identical Bins', ylim=c(0,100))
 	dev.off()
 
 	jpeg(filename=paste("identical_amp_bins.jpeg", sep=""))
 	#plot(pcts, ident_amp, main="% Bins with Matching Amp / Del", type="b", xlab="% Reads", ylab="% Identical Bins", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
-	barplot(ident_amp, names.arg=names, xlab='% Reads', ylab='% Same Amp/Del')
+	barplot(ident_amp, names.arg=names, las=2, xlab='% Reads', ylab='% Same Amp/Del', ylim=c(0,100))
 	dev.off()
 
 	jpeg(filename=paste("euclidean_dist.jpeg", sep=""))
 	#plot(pcts, dists_e, main="Euclidean Distance between CNVs", type="b", xlab="% Reads", ylab="Euclidean Distance", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
-	barplot(dists_e, names.arg=names, xlab='% Reads', ylab='Euclidean Distance')
+	barplot(dists_e, names.arg=names, las=2, xlab='% Reads', ylab='Euclidean Distance')
 	dev.off()
 
 	jpeg(filename=paste("manhattan_dist.jpeg", sep=""))
 	#plot(pcts, dists_m, main="Manhattan Distance between CNVs", type="b", xlab="% Reads", ylab="Manhattan Distance", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
-	barplot(dists_m, names.arg=names, xlab='% Reads', ylab='Manhattan Distance')
+	barplot(dists_m, names.arg=names, las=2, xlab='% Reads', ylab='Manhattan Distance')
 	dev.off()
 
 	jpeg(filename=paste("spearman.jpeg", sep=""))
 	#plot(pcts, spearman, main="Spearman Correlation between CNVs", type="b", ylim=c(0,1), xlab="% Reads", ylab="Spearman Correlation", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
-	barplot(spearman, names.arg=names, xlab='% Reads', ylab='Spearman Correlation')
+	barplot(spearman, names.arg=names, las=2, xlab='% Reads', ylab='Spearman Correlation', ylim=c(0,1))
 	dev.off()
 
 	jpeg(filename=paste("pearson.jpeg", sep=""))
 	#plot(pcts, pearson, main="Pearson Correlation between CNVs", type="b", ylim=c(0,1), xlab="% Reads", ylab="Pearson Correlation", cex.main=1.5, cex.axis=1.5, cex.lab=1.5)
-	barplot(pearson, names.arg=names, xlab='% Reads', ylab='Pearson Correlation')
+	barplot(pearson, names.arg=names, las=2, xlab='% Reads', ylab='Pearson Correlation', ylim=c(0,1))
 	dev.off()
 
 	#file.create(paste(analysisID,'.done', sep=""))
@@ -378,8 +379,10 @@ if(analysisType == "mad")
 	library(scales)
 
 	# Calculate MAD for selected cells
+        cat("Step A\n")
 	a = matrix(0, length(cellIDs), 4)
-	rownames(a) <- colnames(normal)
+	rownames(a) <- colnames(normal[,cellIDs])
+        cat("Step B\n")
 	for(i in 1:length(cellIDs))
 	{
 		cell = cellIDs[i]
@@ -388,6 +391,7 @@ if(analysisType == "mad")
 		a[i, 3] = mad(normal[-(1:3), cell] - normal[1:(l-3), cell])
 		a[i, 4] = mad(normal[-(1:4), cell] - normal[1:(l-4), cell])
 	}
+        cat("Step C\n")
 
 	jpeg(filename=paste(analysisID, ".jpeg", sep=""), width=500, height=500)
 

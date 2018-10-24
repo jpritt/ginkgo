@@ -115,8 +115,23 @@ Smits = {};Smits.Common = {
 		
 		};
 		this.scale = function(multiplier){
-			svg.svg.scale(multiplier);
+			svg.scale(multiplier);
 		};
+                this.startX = function(){
+                    return phylogram.getPaddingX();
+                };
+                this.startY = function() {
+                    return phylogram.getTreeTop();
+                };
+                this.endY = function() {
+                    return phylogram.getTreeBottom();
+                };
+                this.treeHeight = function() {
+                    return phylogram.getTreeHeight();
+                }
+                this.treeScale = function() {
+                    return phylogram.getTreeScale();
+                }
 		this.getSvg = function(){
 			return svg;
 		};
@@ -175,6 +190,8 @@ Smits = {};Smits.Common = {
 
 		divId = sDivId;
 		svg = new Smits.PhyloCanvas.Render.SVG( divId, canvasWidth, canvasHeight );
+
+                //Smits.Common.addRaphEventHandler(svg, 'click', function() { console.log("Clicked"); }, {});
 		
 			/* FACTORY */
 		if(type == "circular"){
@@ -1055,6 +1072,7 @@ Smits.PhyloCanvas.NexmlParse.prototype = {
 										// for more space for the textual/charting components
 		paddingX		: 15,//10
 		paddingY		: 10,//20
+                bufferY			: 20,
 		
 		bufferInnerLabels : 5, 		// Pixels
 		bufferOuterLabels : 0, 			// Pixels
@@ -1064,7 +1082,7 @@ Smits.PhyloCanvas.NexmlParse.prototype = {
 										// compensated by an increase in bufferX too
 		alignRight		: true,
 		
-		showScaleBar	: false			// (STRING,  e.g. "0.05") Shows a scale bar at the bottom of the tree
+		showScaleBar	: "10"			// (STRING,  e.g. "0.05") Shows a scale bar at the bottom of the tree
 	},
 	
 	/* Circular Phylogram */
@@ -1146,7 +1164,6 @@ Smits.PhyloCanvas.NexmlParse.prototype = {
 		/* Defaults */	
 		this.type = 'line';
 		this.attr = Smits.PhyloCanvas.Render.Style.line;
-		
 		this.x1 = x1;
 		this.x2 = x2;
 		this.y1 = y1;
@@ -1168,7 +1185,7 @@ Smits.PhyloCanvas.NexmlParse.prototype = {
 		this.x = x;
 		this.y = y;
 		this.text = text;
-		
+
 		if(params) {
 			Smits.Common.apply(this, params);
 			if(params.attr) this.attr = params.attr;
@@ -1256,7 +1273,8 @@ Smits.PhyloCanvas.Render.SVG.prototype = {
 			param;
 
 	   if(instruct.type == 'line'){
-			obj = this.svg.path(["M", instruct.x1, instruct.y1, "L", instruct.x2, instruct.y2]).attr(Smits.PhyloCanvas.Render.Style.line);
+			//obj = this.svg.path(["M", instruct.x1, instruct.y1, "L", instruct.x2, instruct.y2]).attr(Smits.PhyloCanvas.Render.Style.line);
+			obj = this.svg.path(["M", instruct.x1, instruct.y1, "L", instruct.x2, instruct.y2]).attr(instruct.attr);
 		} else if(instruct.type == 'path'){
 			obj = this.svg.path(instruct.path).attr(instruct.attr);			
 		} else if(instruct.type == 'circle'){
@@ -1284,14 +1302,14 @@ Smits.PhyloCanvas.Render.SVG.prototype = {
 	var svg,
 	sParams = Smits.PhyloCanvas.Render.Parameters.Rectangular, 	// Easy Reference
 	canvasX, canvasY,
-	scaleX, scaleY, maxBranch,
+	scaleX, scaleY, maxBranch,mNewickLen,
 	minHeightBetweenLeaves,
 	firstBranch = true,
 	absoluteY = 0, maxLabelLength = 0,
 	outerX, outerY, outerRadius,
 	x1, x2, y1, y2, 
 	positionX, positionY,
-	bufferX, paddingX, paddingY, labelsHold = [],
+	bufferX,bufferY, paddingX, paddingY, labelsHold = [],
 	
 	textPadding = function (y){
 		return y + Math.round(y / 4);
@@ -1448,15 +1466,39 @@ Smits.PhyloCanvas.Render.SVG.prototype = {
 	},
 	
 	drawScaleBar = function (){
-		y = absoluteY + scaleY;
-		x1 = 0;
-		x2 = sParams.showScaleBar * scaleX;
-		svg.draw(new Smits.PhyloCanvas.Render.Line(x1, x2, y, y));
-		svg.draw(new Smits.PhyloCanvas.Render.Text(
-			(x1+x2)/2, 
-			y-8, 
-			sParams.showScaleBar)
-		);
+		//maxBranch = Math.round( canvasX - bufferX - paddingX*2 );
+                var maxBranch = scaleX * mNewickLen;
+                yTop = paddingY + bufferY-10;
+                yBot = absoluteY + scaleY;
+                x1 = paddingX;
+                x2 = x1 + maxBranch;
+                svg.draw(new Smits.PhyloCanvas.Render.Line(x1, x2, yTop, yTop));
+                svg.draw(new Smits.PhyloCanvas.Render.Line(x1, x2, yBot, yBot));
+		var attr = {};
+                attr["text-anchor"] = "middle";
+                for(var i = 0; i <= maxBranch/scaleX; i+=20){
+                        tickX = x2 - scaleX*i;
+                	svg.draw(new Smits.PhyloCanvas.Render.Line(tickX, tickX, yBot, yBot+5));
+			svg.draw(
+				new Smits.PhyloCanvas.Render.Text(
+					tickX, yBot+12, 
+					i.toString(), 
+					{
+						attr: attr 
+					}
+				)
+			);
+                	svg.draw(new Smits.PhyloCanvas.Render.Line(tickX, tickX, yTop-5, yTop));
+			svg.draw(
+				new Smits.PhyloCanvas.Render.Text(
+					tickX, yTop-12, 
+					i.toString(), 
+					{
+						attr: attr 
+					}
+				)
+			);
+                }
 	},
 	
 	renderBinaryChart = function(x, groupName, params){
@@ -1522,6 +1564,21 @@ Smits.PhyloCanvas.Render.SVG.prototype = {
 		this.getRoot = function(){
 			return dataObject.getRoot();
 		};
+                this.getPaddingX = function() {
+                        return sParams.paddingX;
+                }
+                this.getTreeHeight = function() {
+                        return dataObject.getNewickLen();
+                }
+                this.getTreeScale = function() {
+                        return scaleX;
+                }
+                this.getTreeTop = function() {
+                        return  paddingY + bufferY-10;
+                }
+                this.getTreeBottom = function() {
+                        return  absoluteY + scaleY;
+                }
 		
 		/* CONSTRUCTOR */
 		if(dataObject.getValidate()){   // Validate
@@ -1530,35 +1587,31 @@ Smits.PhyloCanvas.Render.SVG.prototype = {
 		
 		svg = sSvg;
 		var node = dataObject.getRoot();
-		var mNewickLen = dataObject.getNewickLen();
+		mNewickLen = dataObject.getNewickLen();
 		
 		canvasX = svg.canvasSize[0];			// Full Canvas Width
 		canvasY = svg.canvasSize[1];			// Full Canvas Height
 		
 		bufferX = sParams.bufferX;
+		bufferY = sParams.bufferY;
+		bufferY = sParams.bufferY;
 		paddingX = sParams.paddingX;
 		paddingY = sParams.paddingY;
-		minHeightBetweenLeaves = sParams.minHeightBetweenLeaves;
+                minHeightBetweenLeaves = sParams.minHeightBetweenLeaves;
 
-		absoluteY = paddingY;
+		absoluteY = paddingY+bufferY;
 		
 		scaleX = Math.round((canvasX - bufferX - paddingX*2) / mNewickLen);
-		scaleY = Math.round((canvasY - paddingY*2) / (sParams.showScaleBar ? node.getCountAllChildren() : node.getCountAllChildren() - 1 ) );
+		scaleY = Math.round((canvasY - paddingY*2 - bufferY) / (sParams.showScaleBar ? node.getCountAllChildren() : node.getCountAllChildren() - 1 ) );
 		if(scaleY < minHeightBetweenLeaves){
 			scaleY = minHeightBetweenLeaves;
 		}
 		maxBranch = Math.round( canvasX - bufferX - paddingX*2 );	
-		
 		if(Smits.PhyloCanvas.Render.Parameters.binaryCharts.length || Smits.PhyloCanvas.Render.Parameters.barCharts.length){
 			sParams.alignRight = true;
 		}
 		
 		recursiveCalculateNodePositions(node, paddingX);
-		
-		// Draw Scale Bar
-		if(sParams.showScaleBar){
-			drawScaleBar();
-		}
 		
 		outerX = maxBranch + maxLabelLength + sParams.bufferInnerLabels;
 		// Draw secant highlights
@@ -1577,6 +1630,10 @@ Smits.PhyloCanvas.Render.SVG.prototype = {
 			}
 		}				
 
+		// Draw Scale Bar
+		if(sParams.showScaleBar){
+			drawScaleBar();
+		}
 	}
 }();
 

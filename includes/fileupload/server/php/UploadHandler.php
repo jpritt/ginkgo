@@ -78,7 +78,7 @@ class UploadHandler
             'inline_file_types' => '/\.(gif|jpe?g|png)$/i',
             // Defines which files (based on their names) are accepted for upload:
             // 'accept_file_types' => '/.+$/i',
-            'accept_file_types' => '/.bed$|.tar$|.gz$|.bed.gz$|.tar.gz$|.zip$/i',
+            'accept_file_types' => '/.bed$|.bed.cells$|.tar$|.gz$|.bed.gz$|.bed.gz.cells$|.tar.gz$|.zip$/i',
             // The php.ini settings upload_max_filesize and post_max_size
             // take precedence over the following max_file_size setting:
             'max_file_size' => null,
