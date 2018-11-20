@@ -1466,6 +1466,16 @@ Smits.PhyloCanvas.Render.SVG.prototype = {
 	},
 	
 	drawScaleBar = function (){
+        //canvasX, canvasY,
+        //scaleX, scaleY, maxBranch,mNewickLen,
+        //minHeightBetweenLeaves,
+        //firstBranch = true,
+        //absoluteY = 0, maxLabelLength = 0,
+        //outerX, outerY, outerRadius,
+        //x1, x2, y1, y2,
+        //positionX, positionY,
+        //bufferX,bufferY, paddingX, paddingY
+
 		//maxBranch = Math.round( canvasX - bufferX - paddingX*2 );
                 var maxBranch = scaleX * mNewickLen;
                 yTop = paddingY + bufferY-10;
@@ -1476,7 +1486,14 @@ Smits.PhyloCanvas.Render.SVG.prototype = {
                 svg.draw(new Smits.PhyloCanvas.Render.Line(x1, x2, yBot, yBot));
 		var attr = {};
                 attr["text-anchor"] = "middle";
-                for(var i = 0; i <= maxBranch/scaleX; i+=20){
+                tickScales = [1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,20000,50000,100000];
+                for (var t = 0; t < tickScales.length; t+=1) {
+                    numTicks = maxBranch / (scaleX * tickScales[t]);
+                    if (numTicks <= 10)
+                        break;
+                };
+                tick = tickScales[t]
+                for(var i = 0; i <= maxBranch/scaleX; i+=tick){
                         tickX = x2 - scaleX*i;
                 	svg.draw(new Smits.PhyloCanvas.Render.Line(tickX, tickX, yBot, yBot+5));
 			svg.draw(
@@ -1601,7 +1618,8 @@ Smits.PhyloCanvas.Render.SVG.prototype = {
 
 		absoluteY = paddingY+bufferY;
 		
-		scaleX = Math.round((canvasX - bufferX - paddingX*2) / mNewickLen);
+		//scaleX = Math.round((canvasX - bufferX - paddingX*2) / mNewickLen);
+		scaleX = (canvasX - bufferX - paddingX*2) / mNewickLen;
 		scaleY = Math.round((canvasY - paddingY*2 - bufferY) / (sParams.showScaleBar ? node.getCountAllChildren() : node.getCountAllChildren() - 1 ) );
 		if(scaleY < minHeightBetweenLeaves){
 			scaleY = minHeightBetweenLeaves;

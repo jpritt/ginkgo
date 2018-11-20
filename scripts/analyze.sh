@@ -43,6 +43,8 @@ else
   mv ${dir}/quickTemp ${dir}/${facs}
 fi
 
+cp uploads/qnXwCIkHowiwsN725giF/clust.xml uploads/_t10breast_navin/
+
 # ------------------------------------------------------------------------------
 # -- Map Reads & Prepare Samples For Processing
 # ------------------------------------------------------------------------------

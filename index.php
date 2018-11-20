@@ -929,6 +929,16 @@ if($GINKGO_PAGE == 'admin-search')
                                     </select>
                                 </td>
                             </tr>
+
+                            <tr>
+                                <td width="20%">Gene list:</td>
+                                <td>
+                                    <select id="param-genome" class="input-mini" style="margin-top:8px; font-size:11px; padding-top:3px; padding-bottom:0; height:25px; ">
+                                        <?php $selected = array(); $selected[$config['gene_list']] = ' selected'; ?>
+                                        <option value="CosmicCensus_Sept_2018.tsv"<?php echo $selected['CosmicCensus_Oct_2018.tsv']; ?>>COSMIC</option>
+                                    </select>
+                                </td>
+                            </tr>
                         </table>
                     </div>
 
@@ -1208,8 +1218,8 @@ if($GINKGO_PAGE == 'admin-search')
                     <h3 style="margin-top:-5px;"><span class="badge">STEP 3</span> View results</h3>
                     <div id="results-tree" class="panel panel-info">
                         <div class="panel-heading"><h3 class="panel-title"><span class="glyphicon glyphicon-tree-deciduous"></span> Tree</h3></div>
-                        <div class="panel-body" style="border:0px solid green; ">
-                            <div id="svgCanvas" class="row-fluid" style="border:0px solid red; ">
+                        <div class="panel-body" id="treePanel" style="border:0px solid green; overflow:scroll;">
+                            <div id="svgCanvas" class="row-fluid" style="border:0px solid red; width:2000px;">
                                 Loading tree... <img src="loading.gif" />
                             </div>
                         </div>
@@ -1626,6 +1636,10 @@ if($GINKGO_PAGE == 'admin-search')
         <script type="text/javascript" src="includes/jsphylosvg/raphael-min.js" ></script>
         <script type="text/javascript" src="includes/jsphylosvg/jsphylosvg.js"></script>
 
+        <!-- doubleScroll (for scrollbars on top and bottom of tree)
+        ================================================== -->
+        <script type="text/javascript" src="includes/jQuery-doubleScroll/jquery.doubleScroll.js"></script>
+
         <!-- uniTip
         ================================================== -->
         <link rel="stylesheet" type="text/css" href="includes/unitip/unitip.css">
@@ -1672,6 +1686,8 @@ if($GINKGO_PAGE == 'admin-search')
         // -- On page load ---------------------------------------------------------
         // -------------------------------------------------------------------------
         $(document).ready(function(){
+            $('.panel-body').doubleScroll();
+
             <?php if($GINKGO_PAGE == 'home'): ?>
                 // Set initial size of upload 
                 $(window).resize();
@@ -2072,7 +2088,11 @@ if($GINKGO_PAGE == 'admin-search')
                 else if(step == "4")
                     desc = "Re-clustering with new parameters";
 
-                denominator = 3;
+                // We don't do step 2 anymore
+                if(step > 1)
+                    stepShow = step - 1
+
+                denominator = 2;
                 // Keep in mind: step > 3 is for reclust.R (re-draw dendrograms)
                 if(step > denominator)
                     denominator = step;
@@ -2080,10 +2100,7 @@ if($GINKGO_PAGE == 'admin-search')
                 $("#results-progress").width(overallDone + "%");
                 Tinycon.setBubble(overallDone);
 
-                // We don't do step 2 anymore
                 stepShow = step
-                if(step > 1)
-                    stepShow = step - 1
 
                 // Show status
                 processingMsg = "(" + processing.replace("_", " ") + ")";
@@ -2304,6 +2321,7 @@ if($GINKGO_PAGE == 'admin-search')
                     }
                     loadCellProfile('cnv');
                 });
+                document.getElementById('treePanel').scrollLeft = 2000;
             });
         }
 

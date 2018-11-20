@@ -40,14 +40,20 @@ if (improveBounds) {
   dat_fine    = args[[19]]
   if (length(args) >= 20) {
     clusterCells = TRUE
-    clustThresh = args[[20]]
+    clustThresh = as.numeric(args[[20]])
     outSuffix = "_clust"
+    #sink("results.txt")
+    #cat(paste("Threshold: ", clustThresh, "\n", sep=','))
+    #sink()
   }
 } else {
   if (length(args) >= 18) {
     clusterCells = TRUE
-    clustThresh = args[[18]]
+    clustThresh = as.numeric(args[[18]])
     outSuffix = "_clust"
+    #sink("results.txt")
+    #cat(paste("Threshold: ", clustThresh, "\n", sep=','))
+    #sink()
   }
 }
 
@@ -92,9 +98,10 @@ if (improveBounds) {
   raw_fine = read.table(dat_fine, header=TRUE, sep="\t")
   fine_mult = length(raw_fine[,1]) / length(raw[,1])
 }
-sink("results.txt")
-cat(paste(paste(raw[,1], collapse=','), "\n", sep=','))
-sink()
+#sink("results.txt")
+#cat(paste("Threshold: ", clustThresh, "\n", sep=','))
+#cat(paste(paste(raw[,1], collapse=','), "\n", sep=','))
+#sink()
 
 #badbins = read.table("/local1/work/ginkgodev/genomes/hg19/original/badbins_variable_100000_101_bowtie", header=FALSE, sep="\t", as.is=TRUE)
 #print(badbins)
@@ -171,6 +178,15 @@ if (f == 1 | f == 2)
 if (clusterCells) {
   # Load clustering info
   clust <- readRDS(paste(user_dir, "/clust.hclust", sep=""))
+
+  memb <- cutree(clust, h=100)
+  groups <- tapply(names(memb), memb, c)
+  sink(paste("groups100.2.txt", sep=""))
+  for (n in names(groups)) {
+    cat(paste("group", n, '\t', paste(groups[[n]], sep=','), "\n", sep=""))
+  }
+  sink()
+
   memb <- cutree(clust, h=clustThresh)
   groups <- tapply(names(memb), memb, c)
   sink(paste("groups", clustThresh, ".txt", sep=""))
@@ -755,8 +771,7 @@ processSample <- function(k, loc, raw, GC, bounds, unmappable, refine=F) {
     geom_text(data=anno, aes(x=x, y=y, label=chrom), size=12) +
     scale_x_continuous(limits=c(0, l), expand = c(0, 0)) +
     scale_y_continuous(limits=c(-top*.1, top), expand = c(0, 0)) +
-    #labs(title=paste("Integer Copy Number Profile for Sample \"", lab[k], "\"\n Predicted Ploidy = ", CN, sep=""), x="Chromosome", y="Copy Number", size=16) +
-    labs(title="Read Counts for 10kb Bins", x="Chromosome", y="Normalized Counts", size=16) +
+    labs(title=paste("Integer Copy Number Profile for Sample \"", lab[k], "\"\n Predicted Ploidy = ", CN, sep=""), x="Chromosome", y="Copy Number", size=16) +
     theme(plot.title=element_text(size=40, vjust=1.5)) +
     theme(axis.title.x=element_text(size=40, vjust=-.05), axis.title.y=element_text(size=40, vjust=.1)) +
     theme(axis.text=element_text(color="black", size=40), axis.ticks=element_line(color="black"))+
@@ -1341,11 +1356,6 @@ for (i in 1:num_g) {
   }
   #quit()
 }
-cat(paste("Gene CNs:", "\n", sep=""))
-#for (k in 1:w) {
-#  cat(paste(paste(gene_cns[,k], collapse=","), "\n", sep=""))
-#}
-cat(paste(min(gene_cns), " - ", max(gene_cns), "\n", sep=""))
 rownames(gene_cns) <- gene_names
 
 statusFile=file( paste(user_dir, "/", status, sep="") )
